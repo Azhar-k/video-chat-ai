@@ -1,11 +1,15 @@
 langchain>=0.1.0
 langchain-community>=0.0.16
-langchain-openai>=0.0.5
+langchain-google-genai>=0.0.4
 python-dotenv
-openai
+google-generativeai
 streamlit
-moviepy
-pytube
-openai-whisper
 faiss-cpu
-tiktoken 
+tiktoken
+pydub
+ffmpeg-python
+openai-whisper
+
+# Removed:
+# moviepy - not used for video processing
+# pytube - not used for video downloading 

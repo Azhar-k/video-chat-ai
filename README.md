@@ -31,6 +31,7 @@ VidChat AI is an application that allows users to have interactive conversations
    ```bash
    pip install -r requirements.txt
    ```
+   sudo apt-get update && sudo apt-get install -y ffmpeg
 
 4. Set up your environment variables:
    - Create a `.env` file in the project root directory
