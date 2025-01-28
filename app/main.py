@@ -4,6 +4,10 @@ from chat import ChatBot
 import tempfile
 import os
 from dotenv import load_dotenv
+import logging
+
+# Set up logging to print detailed error messages to the console
+logging.basicConfig(level=logging.ERROR)
 
 # Must set page config before any other st commands
 st.set_page_config(page_title="VidChat AI", page_icon="🎥")
@@ -13,7 +17,7 @@ load_dotenv()
 
 # Verify API key exists
 if not os.getenv("GOOGLE_API_KEY"):
-    st.error("No Google API key found in .env file")
+    st.error("Google API key is missing. Please check your configuration.")
     st.stop()
 
 def main():
@@ -31,17 +35,18 @@ def main():
                 video_path = tmp_file.name
 
             try:
-                # Transcribe video
-                with st.spinner("Transcribing video..."):
-                    transcript = transcribe_video(video_path)
-                    st.session_state['transcript'] = transcript
+                # Check if transcription is already done
+                if 'transcript' not in st.session_state:
+                    with st.spinner("Transcribing video..."):
+                        transcript = transcribe_video(video_path)
+                        st.session_state['transcript'] = transcript  # Store the transcript in session state
 
                 # Initialize chat interface
                 if 'messages' not in st.session_state:
                     st.session_state['messages'] = []
 
                 # Display chat interface
-                chatbot = ChatBot(transcript)
+                chatbot = ChatBot(st.session_state['transcript'])  # Use the stored transcript
                 
                 # Display chat history
                 for message in st.session_state['messages']:
@@ -55,21 +60,25 @@ def main():
                     with st.chat_message("user"):
                         st.write(prompt)
 
-                    # Generate and display assistant response
-                    with st.chat_message("assistant"):
+                    # Show spinner while waiting for the response
+                    with st.spinner("Generating..."):
+                        # Generate and display assistant response
                         response = chatbot.get_response(prompt)
                         st.session_state['messages'].append({"role": "assistant", "content": response})
-                        st.write(response)
+                        with st.chat_message("assistant"):
+                            st.write(response)
 
             except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
+                st.error("An error occurred while processing your request. Please try again.")
+                logging.error(f"Error during processing: {str(e)}")  # Log detailed error
             finally:
                 # Cleanup temporary file
                 if os.path.exists(video_path):
                     os.unlink(video_path)
 
     except Exception as e:
-        st.error(f"An unexpected error occurred: {str(e)}")
+        st.error("An unexpected error occurred. Please try again later.")
+        logging.error(f"Unexpected error: {str(e)}")  # Log detailed error
 
 if __name__ == "__main__":
     main() 
