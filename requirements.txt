@@ -8,7 +8,13 @@ faiss-cpu
 tiktoken
 pydub
 ffmpeg-python
-openai-whisper
+openai-whisper>=20231117
+pytube
+yt-dlp>=2023.7.6
+transformers>=4.30.0
+librosa>=0.10.0
+numpy>=1.23.5
+scipy>=1.10.0
 
 # Removed:
 # moviepy - not used for video processing

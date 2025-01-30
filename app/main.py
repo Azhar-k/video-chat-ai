@@ -1,7 +1,8 @@
 import streamlit as st
 from transcription import transcribe_video
 from chat import ChatBot
-import tempfile
+from youtube_handler import download_youtube_video
+from file_handler import handle_uploaded_file
 import os
 from dotenv import load_dotenv
 import logging
@@ -25,60 +26,60 @@ def main():
     st.write("Chat with your video content!")
 
     try:
-        # File uploader
-        video_file = st.file_uploader("Upload your video", type=['mp4', 'avi', 'mov'])
-
-        if video_file:
-            # Save uploaded file temporarily
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
-                tmp_file.write(video_file.read())
-                video_path = tmp_file.name
-
-            try:
-                # Check if transcription is already done
+        # Input selection
+        input_method = st.radio(
+            "Select input method:",
+            ["YouTube URL", "Upload Video"],
+            index=0  # Keep YouTube URL as default
+        )
+        
+        if input_method == "Upload Video":
+            video_path = handle_uploaded_file()
+            if video_path:
+                try:
+                    if 'transcript' not in st.session_state:
+                        with st.spinner("Transcribing video..."):
+                            transcript = transcribe_video(video_path)
+                            st.session_state['transcript'] = transcript
+                finally:
+                    if os.path.exists(video_path):
+                        os.unlink(video_path)
+                        
+        elif input_method == "YouTube URL":
+            youtube_url = st.text_input("Enter YouTube URL:")
+            if youtube_url:
                 if 'transcript' not in st.session_state:
-                    with st.spinner("Transcribing video..."):
-                        transcript = transcribe_video(video_path)
-                        st.session_state['transcript'] = transcript  # Store the transcript in session state
+                    transcript = download_youtube_video(youtube_url)
+                    if transcript:
+                        st.session_state['transcript'] = transcript
 
-                # Initialize chat interface
-                if 'messages' not in st.session_state:
-                    st.session_state['messages'] = []
+        # Chat interface
+        if 'transcript' in st.session_state:
+            # Initialize chat messages
+            if 'messages' not in st.session_state:
+                st.session_state['messages'] = []
 
-                # Display chat interface
-                chatbot = ChatBot(st.session_state['transcript'])  # Use the stored transcript
-                
-                # Display chat history
-                for message in st.session_state['messages']:
-                    with st.chat_message(message["role"]):
-                        st.write(message["content"])
+            # Display chat history
+            chatbot = ChatBot(st.session_state['transcript'])
+            for message in st.session_state['messages']:
+                with st.chat_message(message["role"]):
+                    st.write(message["content"])
 
-                # Chat input
-                if prompt := st.chat_input("Ask something about the video"):
-                    # Add user message to chat history
-                    st.session_state['messages'].append({"role": "user", "content": prompt})
-                    with st.chat_message("user"):
-                        st.write(prompt)
+            # Chat input
+            if prompt := st.chat_input("Ask something about the video"):
+                st.session_state['messages'].append({"role": "user", "content": prompt})
+                with st.chat_message("user"):
+                    st.write(prompt)
 
-                    # Show spinner while waiting for the response
-                    with st.spinner("Generating..."):
-                        # Generate and display assistant response
-                        response = chatbot.get_response(prompt)
-                        st.session_state['messages'].append({"role": "assistant", "content": response})
-                        with st.chat_message("assistant"):
-                            st.write(response)
-
-            except Exception as e:
-                st.error("An error occurred while processing your request. Please try again.")
-                logging.error(f"Error during processing: {str(e)}")  # Log detailed error
-            finally:
-                # Cleanup temporary file
-                if os.path.exists(video_path):
-                    os.unlink(video_path)
+                with st.spinner("Generating..."):
+                    response = chatbot.get_response(prompt)
+                    st.session_state['messages'].append({"role": "assistant", "content": response})
+                    with st.chat_message("assistant"):
+                        st.write(response)
 
     except Exception as e:
         st.error("An unexpected error occurred. Please try again later.")
-        logging.error(f"Unexpected error: {str(e)}")  # Log detailed error
+        logging.error(f"Main error: {str(e)}")
 
 if __name__ == "__main__":
     main() 

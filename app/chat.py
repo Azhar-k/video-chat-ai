@@ -69,7 +69,7 @@ class ChatBot:
             str: Chatbot's response
         """
         # Retrieve relevant context from the vector store
-        context = self.vectorstore.similarity_search(question, k=3)  # Get the top 3 most relevant chunks
+        context = self.vectorstore.similarity_search(question, k=3)
         context_text = " ".join(doc.page_content for doc in context) if context else "No relevant context found."
 
         # Convert the context to a Document
@@ -82,29 +82,4 @@ class ChatBot:
         })
         
         # Extract the output text from the response
-        return response["output_text"]  # Use the correct key to access the answer
-
-    def get_response_old(self, question: str) -> str:
-        """
-        Get response from the chatbot
-        
-        Args:
-            question (str): User's question
-            
-        Returns:
-            str: Chatbot's response
-        """
-        # Retrieve relevant context from the vector store
-        context = self.vectorstore.similarity_search(question, k=3)  # Get the top 3 most relevant chunks
-        context_text = " ".join(doc.page_content for doc in context) if context else "No relevant context found."
-
-        # Convert the context to a Document
-        doc = Document(page_content=context_text, metadata={})
-
-        # Use the QA chain to generate a response
-        response = self.chain.invoke({
-            "input_documents": [doc],
-            "question": question
-        })
-        
-        return response['answer'] 
+        return response["output_text"] 
